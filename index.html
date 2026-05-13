@@ -93,7 +93,7 @@
   }
   .nav-item:hover { background: #F0F0F0; }
   .nav-item.active {
-    background: var(--orange-soft);
+    background: #FFF5F2;
     color: var(--orange);
     font-weight: 600;
   }
@@ -121,7 +121,7 @@
   .topbar-title { font-size: 15px; font-weight: 600; }
   .topbar-right { display: flex; align-items: center; gap: 12px; }
   .account-btn {
-    background: var(--orange-soft);
+    background: #FFF5F2;
     color: var(--orange);
     border: none;
     padding: 7px 14px;
@@ -264,6 +264,12 @@
     padding: 24px 28px 0;
     flex-shrink: 0;
   }
+  .modal-header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
   .modal-header h2 {
     font-size: 20px;
     font-weight: 700;
@@ -273,6 +279,34 @@
     font-size: 13.5px;
     color: var(--text-muted);
     margin-bottom: 0;
+  }
+
+  /* Global wildcard box */
+  .global-wildcard-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    flex-shrink: 0;
+    cursor: default;
+    transition: all 0.2s;
+  }
+  .global-wildcard-box.active {
+    border-color: var(--orange);
+    background: var(--orange-soft);
+  }
+  .global-wildcard-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-subtle);
+    white-space: nowrap;
+    transition: color 0.2s;
+  }
+  .global-wildcard-box.active .global-wildcard-label {
+    color: var(--orange);
   }
 
   /* Mode switcher (new / edit) */
@@ -357,18 +391,6 @@
     letter-spacing: 0.06em;
     color: var(--text-muted);
   }
-  .select-all-btn {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--orange);
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: inherit;
-    padding: 2px 6px;
-    border-radius: 4px;
-  }
-  .select-all-btn:hover { background: var(--orange-soft); }
 
   /* Accordion item */
   .acc-item {
@@ -458,7 +480,7 @@
     font-weight: 600;
     padding: 2px 8px;
     border-radius: 99px;
-    background: var(--orange-soft);
+    background: #FFF5F2;
     color: var(--orange);
     display: none;
   }
@@ -524,8 +546,13 @@
     transition: color 0.15s;
   }
   .wildcard-toggle.active .wildcard-label {
-    color: var(--orange);
+    color: var(--text);
   }
+  .wildcard-toggle.active .wildcard-switch input:checked + .wildcard-switch-track {
+    background: var(--text);
+  }
+
+  /* Global wildcard box uses default orange switch track — no override needed */
 
   .acc-chevron {
     width: 16px;
@@ -674,7 +701,7 @@
     color: var(--text);
   }
   .confirm-tag.wildcard {
-    background: var(--orange-soft);
+    background: #FFF5F2;
     border-color: var(--orange-soft);
     color: var(--orange);
   }
@@ -893,8 +920,19 @@
 <div class="overlay" id="permOverlay" onclick="if(event.target===this)closePermissions()">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
-      <h2>Nadawanie uprawnień</h2>
-      <p>Określ, do jakich modułów i danych moderator będzie miał dostęp.</p>
+      <div class="modal-header-top">
+        <div>
+          <h2>Nadawanie uprawnień</h2>
+          <p style="display:none;">Określ, do jakich modułów i danych moderator będzie miał dostęp.</p>
+        </div>
+        <div class="global-wildcard-box" id="globalAdminWildcard" data-tooltip="Nadaje moderatorowi pełne uprawnienia administratorskie, widoczność wszystkich partnerów i franczyzobiorców — również tych dodanych w przyszłości." onmouseenter="showTooltip(event, this)" onmouseleave="hideTooltip()">
+          <label class="wildcard-switch">
+            <input type="checkbox" onchange="toggleGlobalAdminWildcard(this.checked)">
+            <span class="wildcard-switch-track"></span>
+          </label>
+          <span class="global-wildcard-label">Pełne uprawnienia</span>
+        </div>
+      </div>
 
       <!-- Mode switch (hidden for business presentation) -->
       <div class="mode-switch" style="display:none;">
@@ -908,8 +946,8 @@
       <div class="perm-section">
         <div class="perm-section-header">
           <span class="perm-section-title">Uprawnienia administratorskie</span>
-          <button class="select-all-btn" onclick="toggleSelectAllAdmin()">Zaznacz wszystko</button>
         </div>
+        <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px;margin-top:-6px;">Określ, jakie akcje będzie mógł podejmować moderator w modułach aplikacji.</p>
 
         <!-- Dashboard -->
         <div class="acc-item" data-category="dashboard">
@@ -1231,10 +1269,9 @@
       <!-- SECTION 2: Place visibility -->
       <div class="perm-section">
         <div class="perm-section-header">
-          <span class="perm-section-title">Wyświetlanie placów</span>
-          <button class="select-all-btn" onclick="toggleSelectAllPlaces()">Zaznacz wszystko</button>
+          <span class="perm-section-title">Widoczność partnerów i franczyz</span>
         </div>
-        <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px;">Określ, które place partnerskie i franczyzowe będą widoczne w zakładce Partnerzy dla tego moderatora.</p>
+        <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px;margin-top:-6px;">Określ, którzy partnerzy i franczyzobiorcy będą widoczni w zakładce Partnerzy dla tego moderatora.</p>
 
         <!-- Partners -->
         <div class="acc-item" data-category="places-partners">
@@ -1246,13 +1283,20 @@
                 <svg class="cb-indeterminate" width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x="2" y="4.25" width="6" height="1.5" rx="0.75" fill="white"/></svg>
               </div>
             </div>
-            <span class="acc-label">Place partnerskie <small id="partnerCount">0 / 50</small></span>
+            <span class="acc-label">Partnerzy <small id="partnerCount">0 / 50</small></span>
             <span class="acc-badge"></span>
+            <span class="wildcard-toggle" data-tooltip="Wszyscy przyszli partnerzy będą widoczni dla tego moderatora." onmouseenter="showTooltip(event, this)" onmouseleave="hideTooltip()" onclick="event.stopPropagation()">
+              <label class="wildcard-switch">
+                <input type="checkbox" onchange="togglePlaceWildcard('partners', this.checked)">
+                <span class="wildcard-switch-track"></span>
+              </label>
+              <span class="wildcard-label">Wildcard</span>
+            </span>
             <svg class="acc-chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
           <div class="acc-body">
             <div class="place-search-wrap">
-              <input type="text" class="place-search" placeholder="Szukaj placu partnerskiego..." oninput="filterPlaces('partners', this.value)">
+              <input type="text" class="place-search" placeholder="Szukaj partnera..." oninput="filterPlaces('partners', this.value)">
             </div>
             <div class="place-list" id="partnersList"></div>
           </div>
@@ -1268,13 +1312,20 @@
                 <svg class="cb-indeterminate" width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x="2" y="4.25" width="6" height="1.5" rx="0.75" fill="white"/></svg>
               </div>
             </div>
-            <span class="acc-label">Place franczyzowe <small id="franchiseCount">0 / 50</small></span>
+            <span class="acc-label">Franczyzy <small id="franchiseCount">0 / 50</small></span>
             <span class="acc-badge"></span>
+            <span class="wildcard-toggle" data-tooltip="Wszyscy przyszli franczyzobiorcy będą widoczni dla tego moderatora." onmouseenter="showTooltip(event, this)" onmouseleave="hideTooltip()" onclick="event.stopPropagation()">
+              <label class="wildcard-switch">
+                <input type="checkbox" onchange="togglePlaceWildcard('franchise', this.checked)">
+                <span class="wildcard-switch-track"></span>
+              </label>
+              <span class="wildcard-label">Wildcard</span>
+            </span>
             <svg class="acc-chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
           <div class="acc-body">
             <div class="place-search-wrap">
-              <input type="text" class="place-search" placeholder="Szukaj placu franczyzowego..." oninput="filterPlaces('franchise', this.value)">
+              <input type="text" class="place-search" placeholder="Szukaj franczyzobiorcy..." oninput="filterPlaces('franchise', this.value)">
             </div>
             <div class="place-list" id="franchiseList"></div>
           </div>
@@ -1331,22 +1382,46 @@ const DEPS = {
 };
 
 // Generate mock places
-const CITIES = ['Bielsko-Biała','Kraków','Warszawa','Wrocław','Poznań','Gdańsk','Łódź','Katowice','Rzeszów','Lublin','Szczecin','Toruń','Opole','Kielce','Radom','Białystok','Olsztyn','Gorzów Wlkp.','Zielona Góra','Częstochowa'];
-const STREETS = ['Krakowska','Warszawska','Główna','Lipowa','Kościuszki','Piłsudskiego','Mickiewicza','Słowackiego','Reymonta','Konopnickiej','Sienkiewicza','Prusa','Orzeszkowej','3 Maja','Wolności','Hallera','Batorego','Jagiellońska','Długa','Krótka','Polna','Leśna','Ogrodowa','Łąkowa','Kolejowa','Fabryczna','Przemysłowa','Magazynowa','Techniczna','Handlowa'];
+const PARTNER_NAMES = [
+  'ABC Storage Sp. z o.o.','AgroBox Polska','Alfa Magazyny','Ares Logistyka','Atlantis Storage',
+  'Baltic Box','BazaBox Kraków','Beta Przestrzeń','Biuro i Box','BoxCity Wrocław',
+  'BoxExperts','BoxLine Gdańsk','BoxMaster','BoxNet Polska','BoxPark Katowice',
+  'BoxPoint Łódź','BoxPro Szczecin','BoxSpace Poznań','BoxStore Lublin','BoxWorld Rzeszów',
+  'Cargo Box','CentralBox','CityStore Warszawa','ComfortBox','Delta Magazyny',
+  'DomBox Białystok','EasyBox Toruń','EcoStorage','EuroBox Opole','ExpressBox',
+  'FirmBox Kielce','FlexiSpace','FortBox','GigaBox','GreenStorage',
+  'HomeBox Radom','HubBox Olsztyn','IdeaBox','InBox Storage','JotBox',
+  'KamelBox','LiderBox','LuxBox','MagBox Zielona Góra','MaxStorage',
+  'MegaBox Częstochowa','MetroBox','MiniBox','ModernBox','NeoBox Gorzów'
+];
 
-function generatePlaces(count, prefix) {
-  const places = [];
-  for (let i = 0; i < count; i++) {
-    const city = CITIES[i % CITIES.length];
-    const street = STREETS[i % STREETS.length];
-    const num = Math.floor(Math.random() * 200) + 1;
-    places.push({ id: `${prefix}-${i}`, name: `${street} ${num}, ${city}`, checked: false });
-  }
-  return places.sort((a, b) => a.name.localeCompare(b.name, 'pl'));
+const FRANCHISE_NAMES = [
+  'Adam Kowalski — Boxado Bielsko','Agata Nowak — Boxado Kraków Nowa Huta','Andrzej Wójcik — Boxado Warszawa Mokotów',
+  'Anna Mazur — Boxado Wrocław Psie Pole','Bartosz Kaczmarek — Boxado Poznań Grunwald','Beata Zielińska — Boxado Gdańsk Wrzeszcz',
+  'Cezary Szymański — Boxado Łódź Widzew','Dariusz Woźniak — Boxado Katowice Ligota','Dorota Dąbrowska — Boxado Rzeszów',
+  'Edyta Kozłowska — Boxado Lublin','Ewa Jankowska — Boxado Szczecin Centrum','Filip Pawlak — Boxado Toruń',
+  'Grzegorz Michalski — Boxado Opole','Halina Grabowska — Boxado Kielce','Hubert Król — Boxado Radom',
+  'Iwona Wieczorek — Boxado Białystok','Jacek Stępień — Boxado Olsztyn','Jan Ostrowski — Boxado Gorzów Wlkp.',
+  'Jolanta Rutkowska — Boxado Zielona Góra','Kamil Baran — Boxado Częstochowa','Karolina Zawadzka — Boxado Bydgoszcz',
+  'Krzysztof Sikora — Boxado Tychy','Leszek Borkowski — Boxado Sosnowiec','Łukasz Marciniak — Boxado Gliwice',
+  'Maciej Szczepański — Boxado Zabrze','Magdalena Krawczyk — Boxado Bytom','Marek Adamczyk — Boxado Rybnik',
+  'Maria Kalinowska — Boxado Dąbrowa Górnicza','Marta Górska — Boxado Elbląg','Michał Laskowski — Boxado Płock',
+  'Monika Błaszczyk — Boxado Wałbrzych','Natalia Piotrowska — Boxado Legnica','Norbert Jakubowski — Boxado Tarnów',
+  'Olga Witkowska — Boxado Nowy Sącz','Paweł Kamiński — Boxado Kalisz','Patrycja Mazurek — Boxado Konin',
+  'Piotr Tomaszewski — Boxado Piła','Rafał Jaworski — Boxado Siedlce','Robert Chmielewski — Boxado Zamość',
+  'Sandra Walczak — Boxado Chełm','Sebastian Kubiak — Boxado Przemyśl','Sylwia Nowicka — Boxado Stalowa Wola',
+  'Tomasz Kwiatkowski — Boxado Mielec','Urszula Sadowska — Boxado Tarnobrzeg','Waldemar Dudek — Boxado Sandomierz',
+  'Weronika Pawłowska — Boxado Krosno','Wojciech Zając — Boxado Jasło','Zbigniew Wróblewski — Boxado Sanok',
+  'Zofia Majewska — Boxado Nisko','Żaneta Urbańska — Boxado Łańcut'
+];
+
+function generateFromNames(names, prefix) {
+  return names.map((name, i) => ({ id: `${prefix}-${i}`, name, checked: false }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pl'));
 }
 
-let partnerPlaces = generatePlaces(50, 'partner');
-let franchisePlaces = generatePlaces(50, 'franchise');
+let partnerPlaces = generateFromNames(PARTNER_NAMES, 'partner');
+let franchisePlaces = generateFromNames(FRANCHISE_NAMES, 'franchise');
 
 // ============ INIT ============
 window._wildcards = { dashboard: false, invitations: false, partner: false, ads: false, customer: false, area: false };
@@ -1442,6 +1517,8 @@ function turnOffWildcard(category) {
     const switchInput = wt.querySelector('input[type="checkbox"]');
     if (switchInput) switchInput.checked = false;
   }
+  // Also check if global wildcard should turn off
+  checkGlobalAdminWildcard();
 }
 
 function handlePermCheck(cb, category, permType) {
@@ -1522,48 +1599,115 @@ function toggleWildcard(category, isOn) {
     accItem.querySelector('.acc-header > .cb-wrap').classList.remove('indeterminate');
     updateAccordionState(category);
   }
+
+  checkGlobalAdminWildcard();
 }
 
-// ============ SELECT ALL ============
-function toggleSelectAllAdmin() {
-  const categories = Object.keys(PERM_STRUCTURE);
-  const allPerms = [];
-  categories.forEach(cat => {
-    const accItem = document.querySelector(`[data-category="${cat}"]`);
-    accItem.querySelectorAll('.acc-body-inner input[type="checkbox"]').forEach(cb => allPerms.push(cb));
-  });
+// ============ GLOBAL ADMIN WILDCARD ============
+function toggleGlobalAdminWildcard(isOn) {
+  const el = document.getElementById('globalAdminWildcard');
+  el.classList.toggle('active', isOn);
 
-  const allChecked = allPerms.every(cb => cb.checked);
-  allPerms.forEach(cb => cb.checked = !allChecked);
+  // Admin permissions
+  const categories = Object.keys(PERM_STRUCTURE);
   categories.forEach(cat => {
     const accItem = document.querySelector(`[data-category="${cat}"]`);
+    accItem.querySelectorAll('.acc-body-inner input[type="checkbox"]').forEach(cb => cb.checked = isOn);
     const catCb = accItem.querySelector('.acc-header > .cb-wrap > input');
-    catCb.checked = !allChecked;
+    catCb.checked = isOn;
     accItem.querySelector('.acc-header > .cb-wrap').classList.remove('indeterminate');
+
+    window._wildcards[cat] = isOn;
+    const wt = accItem.querySelector('.wildcard-toggle');
+    if (wt) {
+      wt.classList.toggle('active', isOn);
+      const sw = wt.querySelector('input[type="checkbox"]');
+      if (sw) sw.checked = isOn;
+    }
+
     updateAccordionState(cat);
   });
 
-  const btn = document.querySelector('.perm-section:first-child .select-all-btn');
-  btn.textContent = allChecked ? 'Zaznacz wszystko' : 'Odznacz wszystko';
-}
+  // Places — also select/deselect all + set wildcards
+  ['partners', 'franchise'].forEach(type => {
+    const data = type === 'partners' ? partnerPlaces : franchisePlaces;
+    data.forEach(p => p.checked = isOn);
+    renderPlaces(type, data);
 
-function toggleSelectAllPlaces() {
-  const allChecked = partnerPlaces.every(p => p.checked) && franchisePlaces.every(p => p.checked);
-  partnerPlaces.forEach(p => p.checked = !allChecked);
-  franchisePlaces.forEach(p => p.checked = !allChecked);
-  renderPlaces('partners', partnerPlaces);
-  renderPlaces('franchise', franchisePlaces);
-
-  // Update category checkboxes
-  ['places-partners', 'places-franchise'].forEach(catKey => {
+    window._placeWildcards[type] = isOn;
+    const catKey = type === 'partners' ? 'places-partners' : 'places-franchise';
     const accItem = document.querySelector(`[data-category="${catKey}"]`);
     const catCb = accItem.querySelector('.acc-header > .cb-wrap > input');
-    catCb.checked = !allChecked;
+    catCb.checked = isOn;
     accItem.querySelector('.acc-header > .cb-wrap').classList.remove('indeterminate');
-  });
 
-  const btn = document.querySelector('.perm-section:last-child .select-all-btn');
-  btn.textContent = allChecked ? 'Zaznacz wszystko' : 'Odznacz wszystko';
+    const wt = accItem.querySelector('.wildcard-toggle');
+    if (wt) {
+      wt.classList.toggle('active', isOn);
+      const sw = wt.querySelector('input[type="checkbox"]');
+      if (sw) sw.checked = isOn;
+    }
+  });
+}
+
+// Auto-off global wildcard when any wildcard (admin or place) turns off
+function checkGlobalAdminWildcard() {
+  const categories = Object.keys(PERM_STRUCTURE);
+  // All admin wildcards on
+  const adminWildcardsOn = categories.every(cat => window._wildcards[cat]);
+  // All admin perms checked
+  let allAdminPermsChecked = true;
+  categories.forEach(cat => {
+    const accItem = document.querySelector(`[data-category="${cat}"]`);
+    const perms = accItem.querySelectorAll('.acc-body-inner input[type="checkbox"]');
+    const checked = accItem.querySelectorAll('.acc-body-inner input[type="checkbox"]:checked');
+    if (perms.length !== checked.length) allAdminPermsChecked = false;
+  });
+  // All place wildcards on
+  const placesWildcardsOn = window._placeWildcards.partners && window._placeWildcards.franchise;
+  // All places checked
+  const allPlacesChecked = partnerPlaces.every(p => p.checked) && franchisePlaces.every(p => p.checked);
+
+  const allOn = adminWildcardsOn && allAdminPermsChecked && placesWildcardsOn && allPlacesChecked;
+  const el = document.getElementById('globalAdminWildcard');
+  el.classList.toggle('active', allOn);
+  el.querySelector('input[type="checkbox"]').checked = allOn;
+}
+
+// ============ PLACE WILDCARD ============
+window._placeWildcards = { partners: false, franchise: false };
+
+function togglePlaceWildcard(type, isOn) {
+  window._placeWildcards[type] = isOn;
+  const catKey = type === 'partners' ? 'places-partners' : 'places-franchise';
+  const accItem = document.querySelector(`[data-category="${catKey}"]`);
+  const wt = accItem.querySelector('.wildcard-toggle');
+  if (wt) wt.classList.toggle('active', isOn);
+
+  if (isOn) {
+    // Check all items
+    const data = type === 'partners' ? partnerPlaces : franchisePlaces;
+    data.forEach(p => p.checked = true);
+    renderPlaces(type, data);
+    const catCb = accItem.querySelector('.acc-header > .cb-wrap > input');
+    catCb.checked = true;
+    accItem.querySelector('.acc-header > .cb-wrap').classList.remove('indeterminate');
+  }
+
+  checkGlobalAdminWildcard();
+}
+
+function turnOffPlaceWildcard(type) {
+  window._placeWildcards[type] = false;
+  const catKey = type === 'partners' ? 'places-partners' : 'places-franchise';
+  const accItem = document.querySelector(`[data-category="${catKey}"]`);
+  const wt = accItem.querySelector('.wildcard-toggle');
+  if (wt) {
+    wt.classList.remove('active');
+    const sw = wt.querySelector('input[type="checkbox"]');
+    if (sw) sw.checked = false;
+  }
+  checkGlobalAdminWildcard();
 }
 
 // ============ PLACE HANDLING ============
@@ -1571,12 +1715,15 @@ function handlePlaceCheck(type, id, checked) {
   const data = type === 'partners' ? partnerPlaces : franchisePlaces;
   const place = data.find(p => p.id === id);
   if (place) place.checked = checked;
+  // Uncheck → turn off place wildcard
+  if (!checked) turnOffPlaceWildcard(type);
   updatePlaceCount(type);
 }
 
 function handlePlaceCategoryCheck(cb, type) {
   const data = type === 'partners' ? partnerPlaces : franchisePlaces;
   data.forEach(p => p.checked = cb.checked);
+  if (!cb.checked) turnOffPlaceWildcard(type);
   renderPlaces(type, data);
 }
 
@@ -1668,7 +1815,7 @@ function showConfirm() {
 
   if (adminPerms.length > 0) {
     html += `<div class="confirm-section">
-      <div class="confirm-section-title">Uprawnienia administratorskie</div>
+      <div class="confirm-section-title">Pełne uprawnienia</div>
       <div class="confirm-tag-list">
         ${adminPerms.map(p => `<span class="confirm-tag ${p.isWildcard ? 'wildcard' : ''}">${p.label}</span>`).join('')}
       </div>
@@ -1681,19 +1828,21 @@ function showConfirm() {
 
   if (checkedPartners.length > 0 || checkedFranchise.length > 0) {
     html += `<div class="confirm-section">
-      <div class="confirm-section-title">Widoczność placów</div>
+      <div class="confirm-section-title">Widoczność partnerów i franczyz</div>
       <div class="confirm-tag-list">`;
 
     if (checkedPartners.length === partnerPlaces.length) {
-      html += `<span class="confirm-tag wildcard">Partnerskie: Wszystkie (${partnerPlaces.length})</span>`;
+      const wLabel = window._placeWildcards.partners ? ' + Wildcard' : '';
+      html += `<span class="confirm-tag ${window._placeWildcards.partners ? 'wildcard' : ''}">Partnerzy: Wszyscy (${partnerPlaces.length})${wLabel}</span>`;
     } else if (checkedPartners.length > 0) {
-      html += `<span class="confirm-tag">Partnerskie: ${checkedPartners.length} z ${partnerPlaces.length}</span>`;
+      html += `<span class="confirm-tag">Partnerzy: ${checkedPartners.length} z ${partnerPlaces.length}</span>`;
     }
 
     if (checkedFranchise.length === franchisePlaces.length) {
-      html += `<span class="confirm-tag wildcard">Franczyzowe: Wszystkie (${franchisePlaces.length})</span>`;
+      const wLabel = window._placeWildcards.franchise ? ' + Wildcard' : '';
+      html += `<span class="confirm-tag ${window._placeWildcards.franchise ? 'wildcard' : ''}">Franczyzy: Wszystkie (${franchisePlaces.length})${wLabel}</span>`;
     } else if (checkedFranchise.length > 0) {
-      html += `<span class="confirm-tag">Franczyzowe: ${checkedFranchise.length} z ${franchisePlaces.length}</span>`;
+      html += `<span class="confirm-tag">Franczyzy: ${checkedFranchise.length} z ${franchisePlaces.length}</span>`;
     }
 
     html += `</div></div>`;
