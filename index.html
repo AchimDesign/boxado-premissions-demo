@@ -632,7 +632,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 0;
+    padding: 7px 0;
     border-bottom: 1px solid #F5F5F5;
     font-size: 13px;
     color: var(--text);
@@ -640,6 +640,11 @@
   .place-row:last-child { border-bottom: none; }
   .place-row .cb-wrap { width: 16px; height: 16px; }
   .place-row .cb-visual { width: 16px; height: 16px; border-radius: 3px; }
+  .place-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .place-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .place-info .place-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .place-brand { font-size: 11.5px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .place-nip { font-size: 12px; color: var(--text-subtle); font-family: 'SF Mono', 'Fira Code', monospace; flex-shrink: 0; }
 
   /* ============ CONFIRM MODAL ============ */
   .confirm-overlay {
@@ -961,7 +966,7 @@
             </div>
             <span class="acc-label">Dashboard <small class="tech-hidden">admin.dashboard.*</small></span>
             <span class="acc-badge"></span>
-            <span class="wildcard-toggle" data-tooltip="Uruchomiony wildcard gwarantuje, że osoba, której przydzielasz uprawnienia otrzyma dostęp do nowych uprawnień, które zostaną dodane do tego modułu w przyszłości." onmouseenter="showTooltip(event, this)" onmouseleave="hideTooltip()" onclick="event.stopPropagation()">
+            <span class="wildcard-toggle" data-tooltip="Wildcard gwarantuje, że użytkownik będzie miał dostęp do wszystkich uprawnień w ramach modułu, nawet tych, których jeszcze nie ma." onmouseenter="showTooltip(event, this)" onmouseleave="hideTooltip()" onclick="event.stopPropagation()">
               <label class="wildcard-switch">
                 <input type="checkbox" onchange="toggleWildcard('dashboard', this.checked)">
                 <span class="wildcard-switch-track"></span>
@@ -1105,9 +1110,9 @@
                   </div>
                 </div>
                 <div class="perm-row-text">
-                  <div class="perm-row-label">Logowanie jako partner</div>
+                  <div class="perm-row-label">Logowanie jako partner franczyzowy</div>
                   <div class="perm-row-code">admin.partner.impersonate.*</div>
-                  <div class="perm-row-desc">Logowanie na konto partnera w jego imieniu — widok jego panelu, danych, ustawień. Nie obejmuje edycji danych ani zmian w umowach.</div>
+                  <div class="perm-row-desc">Logowanie na konto partnera w jego imieniu — widok jego panelu, danych, ustawień. Obejmuje edycję danych oraz zmiany w umowach.</div>
                 </div>
               </div>
             </div>
@@ -1261,6 +1266,20 @@
                   <div class="perm-row-desc">Przeglądanie listy placów, konfiguracji, boxów, adresów i parametrów.</div>
                 </div>
               </div>
+              <div class="perm-row">
+                <div class="cb-wrap" onclick="event.stopPropagation()">
+                  <input type="checkbox" data-perm="area.unintegrated" onchange="handlePermCheck(this, 'area', 'unintegrated')" aria-label="Place — widoczność niezintegrowanych">
+                  <div class="cb-visual">
+                    <svg class="cb-check" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6l2.5 2.5 4.5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <svg class="cb-indeterminate" width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x="2" y="4.25" width="6" height="1.5" rx="0.75" fill="white"/></svg>
+                  </div>
+                </div>
+                <div class="perm-row-text">
+                  <div class="perm-row-label">Widoczność placów niezintegrowanych</div>
+                  <div class="perm-row-code">admin.area.unintegrated.*</div>
+                  <div class="perm-row-desc">Wyświetlanie placów, które nie zostały jeszcze zintegrowane z systemem Boxado.</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1372,7 +1391,7 @@ const PERM_STRUCTURE = {
   partner: { label: 'Partnerzy', perms: ['read', 'write', 'impersonate'] },
   ads: { label: 'Reklamy', perms: ['read', 'write'] },
   customer: { label: 'Klienci', perms: ['read', 'write'] },
-  area: { label: 'Place', perms: ['read'] },
+  area: { label: 'Place', perms: ['read', 'unintegrated'] },
 };
 
 // Dependency rules: checking X also checks Y
@@ -1382,46 +1401,128 @@ const DEPS = {
 };
 
 // Generate mock places
-const PARTNER_NAMES = [
-  'ABC Storage Sp. z o.o.','AgroBox Polska','Alfa Magazyny','Ares Logistyka','Atlantis Storage',
-  'Baltic Box','BazaBox Kraków','Beta Przestrzeń','Biuro i Box','BoxCity Wrocław',
-  'BoxExperts','BoxLine Gdańsk','BoxMaster','BoxNet Polska','BoxPark Katowice',
-  'BoxPoint Łódź','BoxPro Szczecin','BoxSpace Poznań','BoxStore Lublin','BoxWorld Rzeszów',
-  'Cargo Box','CentralBox','CityStore Warszawa','ComfortBox','Delta Magazyny',
-  'DomBox Białystok','EasyBox Toruń','EcoStorage','EuroBox Opole','ExpressBox',
-  'FirmBox Kielce','FlexiSpace','FortBox','GigaBox','GreenStorage',
-  'HomeBox Radom','HubBox Olsztyn','IdeaBox','InBox Storage','JotBox',
-  'KamelBox','LiderBox','LuxBox','MagBox Zielona Góra','MaxStorage',
-  'MegaBox Częstochowa','MetroBox','MiniBox','ModernBox','NeoBox Gorzów'
+const PARTNER_DATA = [
+  { name: 'ABC Storage Sp. z o.o.', brand: 'ABC Storage' },
+  { name: 'AgroBox Polska Sp. z o.o.', brand: 'AgroBox' },
+  { name: 'Alfa Magazyny S.A.', brand: 'Alfa Self-Storage' },
+  { name: 'Ares Logistyka Sp. z o.o.', brand: 'Ares Box' },
+  { name: 'Atlantis Storage Sp. z o.o.', brand: 'Atlantis Storage' },
+  { name: 'Baltic Box Sp. z o.o.', brand: 'Baltic Box' },
+  { name: 'BazaBox Kraków Sp. z o.o.', brand: 'BazaBox' },
+  { name: 'Beta Przestrzeń Sp. z o.o.', brand: 'Beta Storage' },
+  { name: 'Biuro i Box Sp. z o.o.', brand: 'Biuro i Box' },
+  { name: 'BoxCity Wrocław S.A.', brand: 'BoxCity' },
+  { name: 'BoxExperts Sp. z o.o.', brand: 'BoxExperts' },
+  { name: 'BoxLine Gdańsk Sp. z o.o.', brand: 'BoxLine' },
+  { name: 'BoxMaster Sp. z o.o.', brand: 'BoxMaster' },
+  { name: 'BoxNet Polska S.A.', brand: 'BoxNet' },
+  { name: 'BoxPark Katowice Sp. z o.o.', brand: 'BoxPark' },
+  { name: 'BoxPoint Łódź Sp. z o.o.', brand: 'BoxPoint' },
+  { name: 'BoxPro Szczecin Sp. z o.o.', brand: 'BoxPro' },
+  { name: 'BoxSpace Poznań Sp. z o.o.', brand: 'BoxSpace' },
+  { name: 'BoxStore Lublin Sp. z o.o.', brand: 'BoxStore' },
+  { name: 'BoxWorld Rzeszów Sp. z o.o.', brand: 'BoxWorld' },
+  { name: 'Cargo Box Sp. z o.o.', brand: 'Cargo Box' },
+  { name: 'CentralBox Sp. z o.o.', brand: 'CentralBox' },
+  { name: 'CityStore Warszawa Sp. z o.o.', brand: 'CityStore' },
+  { name: 'ComfortBox Sp. z o.o.', brand: 'ComfortBox' },
+  { name: 'Delta Magazyny Sp. z o.o.', brand: 'Delta Storage' },
+  { name: 'DomBox Białystok Sp. z o.o.', brand: 'DomBox' },
+  { name: 'EasyBox Toruń Sp. z o.o.', brand: 'EasyBox' },
+  { name: 'EcoStorage Sp. z o.o.', brand: 'EcoStorage' },
+  { name: 'EuroBox Opole Sp. z o.o.', brand: 'EuroBox' },
+  { name: 'ExpressBox Sp. z o.o.', brand: 'ExpressBox' },
+  { name: 'FirmBox Kielce Sp. z o.o.', brand: 'FirmBox' },
+  { name: 'FlexiSpace Sp. z o.o.', brand: 'FlexiSpace' },
+  { name: 'FortBox Sp. z o.o.', brand: 'FortBox' },
+  { name: 'GigaBox S.A.', brand: 'GigaBox' },
+  { name: 'GreenStorage Sp. z o.o.', brand: 'GreenStorage' },
+  { name: 'HomeBox Radom Sp. z o.o.', brand: 'HomeBox' },
+  { name: 'HubBox Olsztyn Sp. z o.o.', brand: 'HubBox' },
+  { name: 'IdeaBox Sp. z o.o.', brand: 'IdeaBox' },
+  { name: 'InBox Storage Sp. z o.o.', brand: 'InBox Storage' },
+  { name: 'JotBox Sp. z o.o.', brand: 'JotBox' },
+  { name: 'KamelBox Sp. z o.o.', brand: 'KamelBox' },
+  { name: 'LiderBox Sp. z o.o.', brand: 'LiderBox' },
+  { name: 'LuxBox S.A.', brand: 'LuxBox Premium' },
+  { name: 'MagBox Zielona Góra Sp. z o.o.', brand: 'MagBox' },
+  { name: 'MaxStorage Sp. z o.o.', brand: 'MaxStorage' },
+  { name: 'MegaBox Częstochowa Sp. z o.o.', brand: 'MegaBox' },
+  { name: 'MetroBox Sp. z o.o.', brand: 'MetroBox' },
+  { name: 'MiniBox Sp. z o.o.', brand: 'MiniBox' },
+  { name: 'ModernBox Sp. z o.o.', brand: 'ModernBox' },
+  { name: 'NeoBox Gorzów Sp. z o.o.', brand: 'NeoBox' },
 ];
 
-const FRANCHISE_NAMES = [
-  'Adam Kowalski — Boxado Bielsko','Agata Nowak — Boxado Kraków Nowa Huta','Andrzej Wójcik — Boxado Warszawa Mokotów',
-  'Anna Mazur — Boxado Wrocław Psie Pole','Bartosz Kaczmarek — Boxado Poznań Grunwald','Beata Zielińska — Boxado Gdańsk Wrzeszcz',
-  'Cezary Szymański — Boxado Łódź Widzew','Dariusz Woźniak — Boxado Katowice Ligota','Dorota Dąbrowska — Boxado Rzeszów',
-  'Edyta Kozłowska — Boxado Lublin','Ewa Jankowska — Boxado Szczecin Centrum','Filip Pawlak — Boxado Toruń',
-  'Grzegorz Michalski — Boxado Opole','Halina Grabowska — Boxado Kielce','Hubert Król — Boxado Radom',
-  'Iwona Wieczorek — Boxado Białystok','Jacek Stępień — Boxado Olsztyn','Jan Ostrowski — Boxado Gorzów Wlkp.',
-  'Jolanta Rutkowska — Boxado Zielona Góra','Kamil Baran — Boxado Częstochowa','Karolina Zawadzka — Boxado Bydgoszcz',
-  'Krzysztof Sikora — Boxado Tychy','Leszek Borkowski — Boxado Sosnowiec','Łukasz Marciniak — Boxado Gliwice',
-  'Maciej Szczepański — Boxado Zabrze','Magdalena Krawczyk — Boxado Bytom','Marek Adamczyk — Boxado Rybnik',
-  'Maria Kalinowska — Boxado Dąbrowa Górnicza','Marta Górska — Boxado Elbląg','Michał Laskowski — Boxado Płock',
-  'Monika Błaszczyk — Boxado Wałbrzych','Natalia Piotrowska — Boxado Legnica','Norbert Jakubowski — Boxado Tarnów',
-  'Olga Witkowska — Boxado Nowy Sącz','Paweł Kamiński — Boxado Kalisz','Patrycja Mazurek — Boxado Konin',
-  'Piotr Tomaszewski — Boxado Piła','Rafał Jaworski — Boxado Siedlce','Robert Chmielewski — Boxado Zamość',
-  'Sandra Walczak — Boxado Chełm','Sebastian Kubiak — Boxado Przemyśl','Sylwia Nowicka — Boxado Stalowa Wola',
-  'Tomasz Kwiatkowski — Boxado Mielec','Urszula Sadowska — Boxado Tarnobrzeg','Waldemar Dudek — Boxado Sandomierz',
-  'Weronika Pawłowska — Boxado Krosno','Wojciech Zając — Boxado Jasło','Zbigniew Wróblewski — Boxado Sanok',
-  'Zofia Majewska — Boxado Nisko','Żaneta Urbańska — Boxado Łańcut'
+const FRANCHISE_DATA = [
+  { name: 'Adam Kowalski', brand: 'Boxado Self-Storage Bielsko' },
+  { name: 'Agata Nowak', brand: 'Boxado Self-Storage Kraków Nowa Huta' },
+  { name: 'Andrzej Wójcik', brand: 'Boxado Self-Storage Warszawa Mokotów' },
+  { name: 'Anna Mazur', brand: 'Boxado Self-Storage Wrocław Psie Pole' },
+  { name: 'Bartosz Kaczmarek', brand: 'Boxado Self-Storage Poznań Grunwald' },
+  { name: 'Beata Zielińska', brand: 'Boxado Self-Storage Gdańsk Wrzeszcz' },
+  { name: 'Cezary Szymański', brand: 'Boxado Self-Storage Łódź Widzew' },
+  { name: 'Dariusz Woźniak', brand: 'Boxado Self-Storage Katowice Ligota' },
+  { name: 'Dorota Dąbrowska', brand: 'Boxado Self-Storage Rzeszów' },
+  { name: 'Edyta Kozłowska', brand: 'Boxado Self-Storage Lublin' },
+  { name: 'Ewa Jankowska', brand: 'Boxado Self-Storage Szczecin Centrum' },
+  { name: 'Filip Pawlak', brand: 'Boxado Self-Storage Toruń' },
+  { name: 'Grzegorz Michalski', brand: 'Boxado Self-Storage Opole' },
+  { name: 'Halina Grabowska', brand: 'Boxado Self-Storage Kielce' },
+  { name: 'Hubert Król', brand: 'Boxado Self-Storage Radom' },
+  { name: 'Iwona Wieczorek', brand: 'Boxado Self-Storage Białystok' },
+  { name: 'Jacek Stępień', brand: 'Boxado Self-Storage Olsztyn' },
+  { name: 'Jan Ostrowski', brand: 'Boxado Self-Storage Gorzów Wlkp.' },
+  { name: 'Jolanta Rutkowska', brand: 'Boxado Self-Storage Zielona Góra' },
+  { name: 'Kamil Baran', brand: 'Boxado Self-Storage Częstochowa' },
+  { name: 'Karolina Zawadzka', brand: 'Boxado Self-Storage Bydgoszcz' },
+  { name: 'Krzysztof Sikora', brand: 'Boxado Self-Storage Tychy' },
+  { name: 'Leszek Borkowski', brand: 'Boxado Self-Storage Sosnowiec' },
+  { name: 'Łukasz Marciniak', brand: 'Boxado Self-Storage Gliwice' },
+  { name: 'Maciej Szczepański', brand: 'Boxado Self-Storage Zabrze' },
+  { name: 'Magdalena Krawczyk', brand: 'Boxado Self-Storage Bytom' },
+  { name: 'Marek Adamczyk', brand: 'Boxado Self-Storage Rybnik' },
+  { name: 'Maria Kalinowska', brand: 'Boxado Self-Storage Dąbrowa Górnicza' },
+  { name: 'Marta Górska', brand: 'Boxado Self-Storage Elbląg' },
+  { name: 'Michał Laskowski', brand: 'Boxado Self-Storage Płock' },
+  { name: 'Monika Błaszczyk', brand: 'Boxado Self-Storage Wałbrzych' },
+  { name: 'Natalia Piotrowska', brand: 'Boxado Self-Storage Legnica' },
+  { name: 'Norbert Jakubowski', brand: 'Boxado Self-Storage Tarnów' },
+  { name: 'Olga Witkowska', brand: 'Boxado Self-Storage Nowy Sącz' },
+  { name: 'Paweł Kamiński', brand: 'Boxado Self-Storage Kalisz' },
+  { name: 'Patrycja Mazurek', brand: 'Boxado Self-Storage Konin' },
+  { name: 'Piotr Tomaszewski', brand: 'Boxado Self-Storage Piła' },
+  { name: 'Rafał Jaworski', brand: 'Boxado Self-Storage Siedlce' },
+  { name: 'Robert Chmielewski', brand: 'Boxado Self-Storage Zamość' },
+  { name: 'Sandra Walczak', brand: 'Boxado Self-Storage Chełm' },
+  { name: 'Sebastian Kubiak', brand: 'Boxado Self-Storage Przemyśl' },
+  { name: 'Sylwia Nowicka', brand: 'Boxado Self-Storage Stalowa Wola' },
+  { name: 'Tomasz Kwiatkowski', brand: 'Boxado Self-Storage Mielec' },
+  { name: 'Urszula Sadowska', brand: 'Boxado Self-Storage Tarnobrzeg' },
+  { name: 'Waldemar Dudek', brand: 'Boxado Self-Storage Sandomierz' },
+  { name: 'Weronika Pawłowska', brand: 'Boxado Self-Storage Krosno' },
+  { name: 'Wojciech Zając', brand: 'Boxado Self-Storage Jasło' },
+  { name: 'Zbigniew Wróblewski', brand: 'Boxado Self-Storage Sanok' },
+  { name: 'Zofia Majewska', brand: 'Boxado Self-Storage Nisko' },
+  { name: 'Żaneta Urbańska', brand: 'Boxado Self-Storage Łańcut' },
 ];
 
-function generateFromNames(names, prefix) {
-  return names.map((name, i) => ({ id: `${prefix}-${i}`, name, checked: false }))
+function generateNIP() {
+  const w = [6,5,7,2,3,4,5,6,7];
+  let digits = [];
+  for (let i = 0; i < 9; i++) digits.push(Math.floor(Math.random() * 10));
+  const sum = digits.reduce((s, d, i) => s + d * w[i], 0);
+  digits.push(sum % 11 === 10 ? 0 : sum % 11);
+  return digits.join('').replace(/^(\d{3})(\d{3})(\d{2})(\d{2})$/, '$1-$2-$3-$4');
+}
+
+function generateFromData(dataArr, prefix) {
+  return dataArr.map((item, i) => ({ id: `${prefix}-${i}`, name: item.name, brand: item.brand, nip: generateNIP(), checked: false }))
     .sort((a, b) => a.name.localeCompare(b.name, 'pl'));
 }
 
-let partnerPlaces = generateFromNames(PARTNER_NAMES, 'partner');
-let franchisePlaces = generateFromNames(FRANCHISE_NAMES, 'franchise');
+let partnerPlaces = generateFromData(PARTNER_DATA, 'partner');
+let franchisePlaces = generateFromData(FRANCHISE_DATA, 'franchise');
 
 // ============ INIT ============
 window._wildcards = { dashboard: false, invitations: false, partner: false, ads: false, customer: false, area: false };
@@ -1433,7 +1534,12 @@ function init() {
 
 function renderPlaces(type, data, filter = '') {
   const listEl = type === 'partners' ? document.getElementById('partnersList') : document.getElementById('franchiseList');
-  const filtered = filter ? data.filter(p => p.name.toLowerCase().includes(filter.toLowerCase())) : data;
+  const q = filter.toLowerCase();
+  const filtered = filter ? data.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    p.brand.toLowerCase().includes(q) ||
+    p.nip.replace(/-/g,'').includes(q.replace(/-/g,''))
+  ) : data;
 
   listEl.innerHTML = filtered.map(p => `
     <div class="place-row">
@@ -1444,7 +1550,11 @@ function renderPlaces(type, data, filter = '') {
           <svg class="cb-indeterminate" width="8" height="8" viewBox="0 0 10 10" fill="none"><rect x="2" y="4.25" width="6" height="1.5" rx="0.75" fill="white"/></svg>
         </div>
       </div>
-      <span>${p.name}</span>
+      <div class="place-info">
+        <span class="place-name">${p.name}</span>
+        <span class="place-brand">${p.brand}</span>
+      </div>
+      <span class="place-nip">${p.nip}</span>
     </div>
   `).join('');
 
@@ -1571,7 +1681,7 @@ function updateAccordionState(category) {
     accItem.classList.add('has-selection');
     const names = Array.from(checkedPerms).map(c => {
       const p = c.dataset.perm.split('.')[1];
-      return p === 'read' ? 'Odczyt' : p === 'write' ? 'Zapis' : 'Impersonate';
+      return p === 'read' ? 'Odczyt' : p === 'write' ? 'Zapis' : p === 'unintegrated' ? 'Niezintegrowane' : 'Impersonate';
     });
     badge.textContent = names.join(', ');
   } else {
@@ -1807,7 +1917,7 @@ function showConfirm() {
       checkedPerms.forEach(cb => {
         const perm = cb.dataset.perm;
         const type = perm.split('.')[1];
-        const typeLabel = type === 'read' ? 'Odczyt' : type === 'write' ? 'Zapis' : 'Impersonate';
+        const typeLabel = type === 'read' ? 'Odczyt' : type === 'write' ? 'Zapis' : type === 'unintegrated' ? 'Niezintegrowane' : 'Impersonate';
         adminPerms.push({ label: `${PERM_STRUCTURE[cat].label} — ${typeLabel}`, scope: `admin.${perm}.*`, isWildcard: false });
       });
     }
